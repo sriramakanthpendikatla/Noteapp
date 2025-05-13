@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3>
+                    <i class="fas fa-list text-primary me-2"></i>Your Notes
+                </h3>
+                <div class="d-flex">
+                    <div class="search-container me-2">
+                        <div class="input-group">
+                            <input type="text" id="searchInput" class="form-control" placeholder="Search notes..." onkeyup="searchNotes()">
+                            <button class="btn btn-outline-primary" type="button">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <a href="/notes" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add Note
+                    </a>
+                </div>
+            </div>
+            {% if user.notes %}
+                <div class="row notes-container">
+                    {% for note in user.notes %}
+                    <div class="col-md-6 mb-4 note-card">
+                        <div class="card h-100">
+                            <div class="card-header bg-transparent">
+                                <h5 class="card-title mb-0">{{ note.title or 'Untitled Note' }}</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text note-content">{{ note.data|truncate(150, true) }}</p>
+                                {% if note.data|length > 150 %}
+                                <button type="button" class="btn btn-link p-0 mt-1 view-note" data-note-id="{{ note.id }}" data-note-title="{{ note.title or 'Untitled Note' }}" data-note-content="{{ note.data }}" data-note-date="{{ note.date.strftime('%Y-%m-%d %H:%M') }} IST">
+                                    <i class="fas fa-expand-alt me-1"></i>View full note
+                                </button>
+                                {% endif %}
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>{{ note.date.strftime('%Y-%m-%d %H:%M') }} IST
+                                </small>
+                            </div>
+                            <div class="card-footer bg-transparent border-0">
+                                <button class="btn btn-danger btn-sm" onclick="deleteNote('{{ note.id }}');">
+                                    <i class="fas fa-trash me-1"></i>Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div id="noNotesMsg" class="alert alert-info text-center">
+                    <i class="fas fa-info-circle me-2"></i>You haven't created any notes yet. Add notes from the Notes page!
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Note Detail Modal -->
+<div class="modal fade" id="noteDetailModal" tabindex="-1" aria-labelledby="noteDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="noteDetailModalLabel">Note Title</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="note-full-content mb-3"></div>
+                <small class="text-muted note-date"></small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block javascript %}
+<script type="text/javascript">
+    function deleteNote(noteId) {
+        if (confirm('Are you sure you want to delete this note?')) {
+            window.location.href = `/delete-note/${noteId}`;
+        }
+    }
+    
+    function searchNotes() {
+        const searchValue = document.getElementById('searchInput').value.toLowerCase();
+        const noteCards = document.querySelectorAll('.note-card');
+        
+        noteCards.forEach(card => {
+            const noteTitle = card.querySelector('.card-title').textContent.toLowerCase();
+            const noteContent = card.querySelector('.card-text').textContent.toLowerCase();
+            if (noteTitle.includes(searchValue) || noteContent.includes(searchValue)) {
+                card.style.display = '';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+        
+        // Handle no notes message visibility
+        const noNotesMsg = document.getElementById('noNotesMsg');
+        if (noNotesMsg) {
+            noNotesMsg.style.display = 'none';
+        }
+    }
+    
+    // Setup modal event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        const viewButtons = document.querySelectorAll('.view-note');
+        const modal = document.getElementById('noteDetailModal');
+        const modalTitle = modal.querySelector('.modal-title');
+        const modalContent = modal.querySelector('.note-full-content');
+        const modalDate = modal.querySelector('.note-date');
+        
+        viewButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const noteTitle = this.getAttribute('data-note-title');
+                const noteContent = this.getAttribute('data-note-content');
+                const noteDate = this.getAttribute('data-note-date');
+                
+                modalTitle.textContent = noteTitle;
+                modalContent.textContent = noteContent;
+                modalDate.innerHTML = `<i class="fas fa-clock me-1"></i>${noteDate}`;
+                
+                const bsModal = new bootstrap.Modal(modal);
+                bsModal.show();
+            });
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}
